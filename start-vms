@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#main function to start the vms
+function start_vm() {
+  printf "\n\n"
+  virsh start $1
+  echo "[+] starting $1"
+
+}
+
+#help
+function help() {
+
+  echo "**************************"
+  echo "* usage: enter the name  *"
+  echo "*   your vm. that's it   *"
+  echo "**************************"
+
+}
+
+#check if the user is in the libvirt group
+function check_groups() {
+  group="libvirt"
+  if [ 'groups $(whoami) | grep -o "libvirt" == "$group"' ]; then
+    printf "[+] you are in the right group"
+    sleep 0.5
+    start_vm $1
+
+  else
+    echo "[+] you are not in the libvirt group. please contact your sysadmin"
+
+  fi
+}
+
+if [ "-h" == $1 ] || [[ $# -eq 0 ]]; then
+  help
+else
+  echo "arg count $#"
+  check_groups $1
+
+fi
