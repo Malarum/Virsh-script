@@ -35,7 +35,6 @@ function check_groups() {
 if [ "-h" == $1 ] || [[ $# -eq 0 ]]; then
   help
 else
-  echo "arg count $#"
   check_groups $1
 
 fi
