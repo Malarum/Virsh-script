@@ -31,12 +31,14 @@ function help() {
 #check if the user is in the libvirt group
 function check_groups() {
   group="libvirt"
-  if [ 'groups $(whoami) | grep -o "libvirt" == "$group"' ]; then
+  get_group=$(groups $(whoami) | grep -o "libvirt")
+  if [ "$get_group" == "$group" ]; then
     echo -e "$GREEN[+] you are in the right group...attempting to start vm"
     sleep 0.5
     start_vm $1
 
   else
+    printf "$get_group\n$group"
     echo -e "$RED[+] you are not in the libvirt group. please contact your sysadmin...or just add yourself to it"
 
   fi
@@ -46,5 +48,5 @@ if [ "-h" == $1 ] || [[ $# -eq 0 ]]; then
   help
 else
   check_groups $1
-
+  tput sgr0
 fi
