@@ -1,11 +1,21 @@
 #!/bin/bash
 
+#colors
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+
 #main function to start the vms
 function start_vm() {
-  printf "\n\n"
-  virsh start $1
-  echo "[+] starting $1"
+  vm_state_running="$(virsh domstate $1 | grep -o running)"
+  while [ "$vm_state_running" != "running" ]; do
+    printf "\n\n"
+    virsh start $1
+    echo -e "$GREEN[+] $1 started"
+    exit
+  done
 
+  echo -e "$RED $1 is already started"
+  exit
 }
 
 #help
@@ -22,12 +32,12 @@ function help() {
 function check_groups() {
   group="libvirt"
   if [ 'groups $(whoami) | grep -o "libvirt" == "$group"' ]; then
-    printf "[+] you are in the right group"
+    echo -e "$GREEN[+] you are in the right group, starting your vm now"
     sleep 0.5
     start_vm $1
 
   else
-    echo "[+] you are not in the libvirt group. please contact your sysadmin"
+    echo -e "$RED[+] you are not in the libvirt group. please contact your sysadmin"
 
   fi
 }
