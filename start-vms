@@ -8,8 +8,8 @@ GREEN=$(tput setaf 2)
 function start_vm() {
   vm_state_running="$(virsh domstate $1 | grep -o running)"
   while [ "$vm_state_running" != "running" ]; do
-    printf "\n\n"
-    virsh start $1
+    printf "\n"
+    virsh start $1 >/dev/null
     echo -e "$GREEN[+] $1 started"
     exit
   done
@@ -32,12 +32,12 @@ function help() {
 function check_groups() {
   group="libvirt"
   if [ 'groups $(whoami) | grep -o "libvirt" == "$group"' ]; then
-    echo -e "$GREEN[+] you are in the right group, starting your vm now"
+    echo -e "$GREEN[+] you are in the right group...attempting to start vm"
     sleep 0.5
     start_vm $1
 
   else
-    echo -e "$RED[+] you are not in the libvirt group. please contact your sysadmin"
+    echo -e "$RED[+] you are not in the libvirt group. please contact your sysadmin...or just add yourself to it"
 
   fi
 }
