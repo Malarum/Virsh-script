@@ -35,7 +35,7 @@ function vm_exist() {
   if_exists=$(virsh list --all | grep -w $1)
 
   if [ -z "$if_exists" ]; then
-    echo "$RED[+] The VM does not exist $NC"
+    echo "$RED[+] The $1 does not exist $NC"
     exit 1
 
   fi
@@ -72,20 +72,18 @@ function start_vm() {
   if [ "$running" == "running" ]; then
     echo -e "$RED[+] $1 is already started $NC"
     exit 0
-  fi
-  #start the vm
-  while [ "$running" != "running" ]; do
+  else
     virsh start "$1" >/dev/null
     local running=$(vm_running $1)
     if [ "$running" != "running" ]; then
-      echo -e "$RED VM seems to have failed to start. VM state: $running $NC"
+      echo -e "$RED $1 seems to have failed to start. VM state: $running $NC"
       exit 1
     else
-      echo -e "$GREEN[+] VM Started successfully $NC"
+      echo -e "$GREEN[+] $1 Started successfully $NC"
       exit 0
     fi
 
-  done
+  fi
 
 }
 
@@ -93,19 +91,19 @@ function stop_vm() {
   vm_exist $1
   local running=$(vm_running $1)
   if [[ "$running" == "shut off" ]]; then
-    echo -e "$RED VM is alreay off exiting...$NC"
+    echo -e "$RED $1 is alreay off exiting...$NC"
     exit 0
   else
-    echo "$GREEN[+]shutting off VM: $1 $NC"
+    echo "$GREEN[+]shutting off $1$NC"
     virsh shutdown $1 >/dev/null
     sleep 2
     local running=$(vm_running $1)
     if [[ "$running" == "shut off" ]]; then
-      echo -e "$GREEN[+] VM $1 successfully shutdown"
+      echo -e "$GREEN[+] $1 successfully shutdown"
       exit 0
     else
-      echo -e "$RED[+] VM has failed to shut down...$NC"
-      echo -e "VM state: $running"
+      echo -e "$RED[+] $1 has failed to shut down...$NC"
+      echo -e "$1 state: $running"
       exit 1
     fi
   fi
@@ -115,11 +113,11 @@ function stop_vm() {
 function reset_vm() {
   vm_exist $1
   if [ "$(vm_running $1)" != "running" ]; then
-    echo -e "$GREEN[+] VM is not running nothing to reset$NC"
+    echo -e "$GREEN[+] $1 is not running nothing to reset$NC"
     exit
   else
     virsh reset $1 >/dev/null
-    echo "$GREEN[+] VM resetting now$NC"
+    echo "$GREEN[+] $1 resetting now$NC"
   fi
 
 }
@@ -127,9 +125,9 @@ function reset_vm() {
 function restart_vm() {
   vm_exist $1
   if [ "$(vm_running $1)" != "running" ]; then
-    echo -e "$GREEN[+] VM is not running nothing to restart"
+    echo -e "$GREEN[+] $1 is not running nothing to restart"
   else
-    echo -e "$GREEN[+] Restarting vm"
+    echo -e "$GREEN[+] Restarting $1"
     virsh reboot $1 >/dev/null
   fi
 }
@@ -137,15 +135,15 @@ function restart_vm() {
 function force_vm_off() {
   vm_exist $1
   if [ "$(vm_running $1)" != "running" ]; then
-    echo -e "$GREEN VM is not running$NC"
+    echo -e "$GREEN $1 is not running$NC"
     exit
   else
-    echo -e "$GREEN[+] Hard resetting vm$NC"
+    echo -e "$GREEN[+] Hard shutting down $1$NC"
     virsh destroy $1 >/dev/null
     if [ "$(vm_running $1)" != "shut off" ]; then
-      echo -e "$RED VM failed to shut off vm status: $(vm_running $1)"
+      echo -e "$RED $1 failed to shut off, vm status: $(vm_running $1)"
     else
-      echo -e "$GREEN[+] VM successfully forcefully shutoff$NC"
+      echo -e "$GREEN[+] $1 successfully forcefully shutoff$NC"
     fi
   fi
 }
@@ -159,10 +157,11 @@ function connect_vm() {
   fi
   local running=$(vm_running $1)
   if [ "$running" != "running" ]; then
-    echo -e "$RED[+] VM is not running please start VM$NC"
+    echo -e "$RED[+] $1 is not running please start it$NC"
     exit 0
   else
-    remmina spice://localhost
+    read -p "Enter the IP of your vm: " ip
+    remmina spice://$ip
   fi
 
 }
