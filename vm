@@ -1,0 +1,206 @@
+#!/bin/bash
+
+echo -e " ______           _______     __ __      ____  __"
+echo -e "|  ____|   /\    / ____\ \   / / \ \    / /  \/  |"
+echo -e "| |__     /  \  | (___  \ \_/ /   \ \  / /| \  / |"
+echo -e "|  __|   / /\ \  \___ \  \   /     \ \/ / | |\/| |"
+echo -e "| |____ / ____ \ ____) |  | |       \  /  | |  | |"
+echo -e "|______/_/    \_\_____/   |_|        \/   |_|  |_|"
+
+#help
+function help() {
+
+  echo -e "Usage:"
+  echo -e "vm [OPTION] <vm-name>"
+  echo -e ""
+  echo -e "options:"
+  echo -e "start, stop, restart, reset, force, connect, status"
+  echo -e ""
+  echo -e "start: starts the vm"
+  echo -e "stop: shuts the vm down"
+  echo -e "restart: restarts the vm"
+  echo -e "reset: force resets the vm"
+  echo -e "force: forcefully shuts the vm off"
+  echo -e "connect: connect to the vm using remmina and spice"
+  echo -e "status: list all vms and their current status"
+
+}
+
+#colors
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+NC=$(tput sgr0)
+
+function vm_exist() {
+  if_exists=$(virsh list --all | grep -w $1)
+
+  if [ -z "$if_exists" ]; then
+    echo "$RED[+] The VM does not exist $NC"
+    exit 1
+
+  fi
+}
+
+#check if the user is in the libvirt group
+function check_groups() {
+  group="libvirt"
+  get_group=$(groups $(whoami) | grep -o "libvirt")
+  if [ "$get_group" == "$group" ]; then
+    if [ $# -eq 1 ]; then
+      echo -e "$GREEN[+] you are in the right group...attempting to run $1$NC"
+    elif [ $# -eq 2 ]; then
+      echo -e "$GREEN[+] you are in the right group...attempting to run $1 on $2$NC"
+    fi
+  else
+
+    echo -e "$RED[+] you are not in the libvirt group. please contact your sysadmin...or just add yourself to it $NC"
+    exit 1
+  fi
+}
+
+function vm_running() {
+
+  vm_state_running="$(virsh domstate $1)"
+  echo $vm_state_running
+}
+
+#main function to start the vms
+function start_vm() {
+  vm_exist $1
+  #check if the vm is running
+  local running=$(vm_running $1)
+  if [ "$running" == "running" ]; then
+    echo -e "$RED[+] $1 is already started $NC"
+    exit 0
+  fi
+  #start the vm
+  while [ "$running" != "running" ]; do
+    virsh start "$1" >/dev/null
+    local running=$(vm_running $1)
+    if [ "$running" != "running" ]; then
+      echo -e "$RED VM seems to have failed to start. VM state: $running $NC"
+      exit 1
+    else
+      echo -e "$GREEN[+] VM Started successfully $NC"
+      exit 0
+    fi
+
+  done
+
+}
+
+function stop_vm() {
+  vm_exist $1
+  local running=$(vm_running $1)
+  if [[ "$running" == "shut off" ]]; then
+    echo -e "$RED VM is alreay off exiting...$NC"
+    exit 0
+  else
+    echo "$GREEN[+]shutting off VM: $1 $NC"
+    virsh shutdown $1 >/dev/null
+    sleep 2
+    local running=$(vm_running $1)
+    if [[ "$running" == "shut off" ]]; then
+      echo -e "$GREEN[+] VM $1 successfully shutdown"
+      exit 0
+    else
+      echo -e "$RED[+] VM has failed to shut down...$NC"
+      echo -e "VM state: $running"
+      exit 1
+    fi
+  fi
+
+}
+
+function reset_vm() {
+  vm_exist $1
+  if [ "$(vm_running $1)" != "running" ]; then
+    echo -e "$GREEN[+] VM is not running nothing to reset$NC"
+    exit
+  else
+    virsh reset $1 >/dev/null
+    echo "$GREEN[+] VM resetting now$NC"
+  fi
+
+}
+
+function restart_vm() {
+  vm_exist $1
+  if [ "$(vm_running $1)" != "running" ]; then
+    echo -e "$GREEN[+] VM is not running nothing to restart"
+  else
+    echo -e "$GREEN[+] Restarting vm"
+    virsh reboot $1 >/dev/null
+  fi
+}
+
+function force_vm_off() {
+  vm_exist $1
+  if [ "$(vm_running $1)" != "running" ]; then
+    echo -e "$GREEN VM is not running$NC"
+    exit
+  else
+    echo -e "$GREEN[+] Hard resetting vm$NC"
+    virsh destroy $1 >/dev/null
+    if [ "$(vm_running $1)" != "shut off" ]; then
+      echo -e "$RED VM failed to shut off vm status: $(vm_running $1)"
+    else
+      echo -e "$GREEN[+] VM successfully forcefully shutoff$NC"
+    fi
+  fi
+}
+
+function connect_vm() {
+  vm_exist $1
+  #check if the vm is running
+  if ! command -v remmina >/dev/null 2>&1; then
+    echo "$RED[+] Remmina not installed... exiting$NC"
+    exit
+  fi
+  local running=$(vm_running $1)
+  if [ "$running" != "running" ]; then
+    echo -e "$RED[+] VM is not running please start VM$NC"
+    exit 0
+  else
+    remmina spice://localhost
+  fi
+
+}
+
+function get_status() {
+  virsh list --all
+}
+
+if [ $# -eq 0 ]; then
+  help
+  exit
+fi
+
+check_groups $1 $2
+
+case $1 in
+"-h" | "--help")
+  help
+  ;;
+"start")
+  start_vm "$2"
+  ;;
+"stop")
+  stop_vm "$2"
+  ;;
+"restart")
+  restart_vm "$2"
+  ;;
+"reset")
+  reset_vm "$2"
+  ;;
+"force")
+  force_vm_off $2
+  ;;
+"connect")
+  connect_vm "$2"
+  ;;
+"status")
+  get_status
+  ;;
+esac

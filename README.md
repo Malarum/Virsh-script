@@ -1,10 +1,19 @@
-# A simple script to easily start a vm with kvm
+# A simple script to easily manipulate your VMs in kvm
 
 ## Usage:
 
-enter the name of the script with the vm name
 
-# Whats the point of this script?
+```
+vm [OPTION] <vm-name>
 
-This is a simple script for me to practice bash concepts
+options:
+start, stop, restart, reset, force, connect, status
 
+start: starts the vm
+stop: shuts the vm down
+restart: restarts the vm
+reset: force resets the vm
+force: forcefully shuts the vm off
+connect: connect to the vm using remmina and spice
+status: list all vms and their current status
+```
