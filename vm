@@ -55,9 +55,10 @@ function vm_exist() {
 
 #check if the user is in the libvirt group
 function check_groups() {
+  check_root=$(whoami | grep -o "root")
   group="libvirt"
   get_group=$(groups $(whoami) | grep -o "libvirt")
-  if [ "$get_group" == "$group" ]; then
+  if [ "$get_group" == "$group" ] || [ "$check_root" == "root" ]; then
     if [ $# -eq 1 ]; then
       echo -e "$GREEN[+] you are in the right group...attempting to run $1$NC"
     elif [ $# -eq 2 ]; then
@@ -147,13 +148,13 @@ function restart_vm() {
 function force_vm_off() {
   vm_exist $1
   if [ "$(vm_running $1)" != "running" ]; then
-    echo -e "$GREEN $1 is not running$NC"
+    echo -e "$GREEN[+] $1 is not running$NC"
     exit
   else
     echo -e "$GREEN[+] Hard shutting down $1$NC"
     virsh destroy $1 >/dev/null
     if [ "$(vm_running $1)" != "shut off" ]; then
-      echo -e "$RED $1 failed to shut off, vm status: $(vm_running $1)"
+      echo -e "$RED[+] $1 failed to shut off, vm status: $(vm_running $1)"
     else
       echo -e "$GREEN[+] $1 successfully forcefully shutoff$NC"
     fi
